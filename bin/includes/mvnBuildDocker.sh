@@ -17,7 +17,7 @@ mvnBuildDocker() {
   local mvnCommand mvnImage crlfDocker mvnVersion mvn_docker_params
   mvnCommand="$1"
   crlfDocker="no"
-  mvn_docker_params=""
+  mvn_docker_params="-DsocksProxyHost=localhost -DsocksProxyPort=8080"
 
   mvnVersion="3.6.3"
   case ${tool} in
@@ -100,7 +100,8 @@ mvnBuildDocker() {
     -v $base/.bnd:/.bnd\
     -u $USER_NAME:$GROUP_ID\
     -e MAVEN_CONFIG=/var/maven/.m2\
-    -w /var/maven/app"
+    -w /var/maven/app\
+    --network=host"
 
   if [[ "${newline}" == crlf* ]]
   then
