@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# PROXY CONFIG
+PROXY_HOST=localhost
+PROXY_PORT=8080
+PROXY_ADDR="socks5h://${PROXY_HOST}:${PROXY_PORT}"
 
 mvnBuildDocker() {
   local mvnCommand mvnImage crlfDocker mvnVersion mvn_docker_params
   mvnCommand="$1"
   crlfDocker="no"
-  mvn_docker_params="-DsocksProxyHost=localhost -DsocksProxyPort=8080"
+  mvn_docker_params="-DsocksProxyHost=${PROXY_HOST} -DsocksProxyPort=${PROXY_PORT}"
 
   mvnVersion="3.6.3"
   case ${tool} in
@@ -101,6 +105,8 @@ mvnBuildDocker() {
     -u $USER_NAME:$GROUP_ID\
     -e MAVEN_CONFIG=/var/maven/.m2\
     -w /var/maven/app\
+    -e HTTP_PROXY=${PROXY_ADDR}\
+    -e HTTPS_PROXY=${PROXY_ADDR}\
     --network=host"
 
   if [[ "${newline}" == crlf* ]]
@@ -140,7 +146,10 @@ mvnBuildDockerBuildBaseToolchainsImage() {
     ) > "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}"
 
     info "Building base Reproducible Builder toolchains image \033[1m${mvnImage}\033[0m"
-    if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin" ;
+    if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin"\
+      --build-arg HTTP_PROXY=${PROXY_ADDR}\
+      --build-arg HTTPS_PROXY=${PROXY_ADDR}\
+      --network=host;
     then
       fatal "Unable to build ${mvnImage} using ${DOCKERFILE}"
     fi
@@ -169,7 +178,10 @@ mvnBuildDockerAddUserLayer() {
     sed -i.bak 's/##TOOLCHAINS##//' "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}"
   fi
 
-  if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin" ;
+  if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin"\
+    --build-arg HTTP_PROXY=${PROXY_ADDR}\
+    --build-arg HTTPS_PROXY=${PROXY_ADDR}\
+    --network=host;
   then
     fatal "Unable to build ${mvnImage} using ${DOCKERFILE}"
   fi
@@ -194,7 +206,10 @@ mvnBuildDockerAddEnvironmentLayer() {
       sed "s@\@\@BUILD_TIMEZONE\@\@@${timezone}@g"
    ) > "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}"
 
-  if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin" ;
+  if ! runcommand docker build -t "${mvnImage}" -f "${DOCKERFILES_TMP_DIR}/${DOCKERFILE}" "${SCRIPTDIR}/bin"\
+    --build-arg HTTP_PROXY=${PROXY_ADDR}\
+    --build-arg HTTPS_PROXY=${PROXY_ADDR}\
+    --network=host;
   then
     fatal "Unable to build ${mvnImage} using ${DOCKERFILE}"
   fi
